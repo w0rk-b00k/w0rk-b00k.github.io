@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="style.css">
+    <title>Lumma v4 Analysis | malcode.tech</title>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html">Home</a>
+            <a href="blog.html">Analysis</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="typing-container">
+            <div class="typing-effect">analysis.0x01</div>
+        </div>
+
+        <h1>Lumma Stealer v4: Indirect Syscalls & Anti-Sandbox</h1>
+        <p class="report-date" style="text-align: left; margin-bottom: 40px;">PUBLISHED: MAR 24, 2026</p>
+
+        <h2>Executive Summary</h2>
+        <p>
+            Lumma Stealer (LummaC2) remains one of the most prolific infostealers in the current threat landscape. This variant (v4.0) demonstrates a significant shift in evasion tactics, moving away from standard Windows API hooks toward the manual implementation of <strong>Indirect Syscalls</strong>. By bypassing the user-mode hooks typically monitored by EDR solutions, Lumma is able to perform stealthy process injection and credential harvesting.
+        </p>
+
+        <h2>Technical Deep Dive</h2>
+        <p style="color: var(--muted); font-style: italic;">
+            [ Pending — analysis in progress ]
+        </p>
+
+        <h2>Behavioral Analysis</h2>
+        <p style="color: var(--muted); font-style: italic;">
+            [ Pending — dynamic analysis in progress ]
+        </p>
+
+        <h2>Network Traffic</h2>
+        <p style="color: var(--muted); font-style: italic;">
+            [ Pending — C2 traffic capture and Wireshark analysis in progress ]
+        </p>
+
+        <h2>YARA Rule</h2>
+        <p style="color: var(--muted); font-style: italic;">
+            [ Pending — signature development in progress ]
+        </p>
+
+        <h2>Indicators of Compromise (IOCs)</h2>
+        <div class="report-card">
+            <div class="keyword-row" style="margin-bottom: 20px;">
+                <span class="keyword">#Network</span>
+                <span class="keyword">#Endpoint</span>
+                <span class="keyword">#Hashes</span>
+            </div>
+            <p style="font-family: monospace; font-size: 0.9rem; text-align: left; color: var(--accent);">
+                SHA256: 69e1c6e6db92779a952338294a7c75782c9ad2c48b57289252e3f5287d1c5bd5<br>
+                C2: collection-services[.]net<br>
+                C2: update-check-v4[.]ru
+            </p>
+        </div>
+
+        <p style="margin-top: 50px;">
+            <a href="blog.html" style="color: var(--accent); text-decoration: none;">&larr; Back to Reports</a>
+        </p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-nasm.min.js"></script>
+    <script>
+        document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'copy';
+            pre.appendChild(btn);
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(pre.querySelector('code').innerText).then(() => {
+                    btn.textContent = 'copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

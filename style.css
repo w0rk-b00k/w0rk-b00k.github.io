@@ -1,0 +1,472 @@
+:root {
+    --bg: #1f2430;
+    --nav-bg: #242936;
+    --fg: #cccac2;
+    --accent: #ffcc66;
+    --border: #3e4b59;
+    --muted: #707a8c;
+}
+
+/* ── Reset & Base ─────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family:
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+/**/
+/* ── Navigation ───────────────────────────────────── */
+
+nav {
+    width: 100%;
+    background-color: rgba(31, 36, 48, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    padding: 18px 20px;
+}
+
+.nav-container {
+    display: flex;
+    gap: 36px;
+    width: 100%;
+    max-width: 750px;
+    justify-content: center;
+}
+
+nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+nav a:hover,
+nav a[aria-current="page"] {
+    color: var(--accent);
+}
+
+/* ── Main Column ──────────────────────────────────── */
+
+main {
+    width: 100%;
+    max-width: 750px;
+    padding: 72px 24px 96px;
+    text-align: left;
+    flex: 1;
+}
+
+/* ── Typing Effect ────────────────────────────────── */
+/*
+  FIX: Remove the hardcoded `12ch` width from the @keyframes.
+  Instead, animate max-width from 0 → 100% on the wrapper,
+  which stretches to fit whatever text is inside naturally.
+  The cursor blink is kept on the ::after pseudo-element so
+  it doesn't interfere with the width animation.
+*/
+
+.typing-container {
+    margin-bottom: 50px;
+    overflow: hidden; /* clip the reveal */
+}
+
+.typing-effect {
+    font-family: "Courier New", Courier, monospace;
+    font-size: clamp(2rem, 6vw, 2.8rem);
+    font-weight: bold;
+    color: var(--accent);
+    white-space: nowrap;
+    display: inline-block;
+    overflow: hidden;
+    max-width: 0;
+    vertical-align: bottom;
+
+    /* Cursor lives on the element border so it doesn't eat into width */
+    border-right: 3px solid var(--accent);
+
+    animation:
+        typing-reveal 1.8s steps(30, end) forwards,
+        cursor-blink 0.7s step-end infinite;
+}
+
+@keyframes typing-reveal {
+    from {
+        max-width: 0;
+    }
+    to {
+        max-width: 100%;
+    } /* expands to fit content */
+}
+
+@keyframes cursor-blink {
+    0%,
+    100% {
+        border-color: var(--accent);
+    }
+    50% {
+        border-color: transparent;
+    }
+}
+
+/* ── Page Title (for analysis.html etc.) ─────────── */
+
+h1.page-title {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 700;
+    color: var(--fg);
+    margin: 0 0 48px;
+    letter-spacing: -0.02em;
+}
+
+/* ── Article headings (lumma.html etc.) ──────────── */
+
+h1 {
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+    margin: 0 0 8px;
+    letter-spacing: -0.02em;
+}
+
+h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--fg);
+    letter-spacing: 0.02em;
+    margin: 48px 0 16px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+}
+
+/* ── Body Text ────────────────────────────────────── */
+
+p {
+    line-height: 1.85;
+    font-size: 1.05rem;
+    margin-bottom: 1.6em;
+    color: rgba(204, 202, 194, 0.88);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ── Report List (analysis.html) ─────────────────── */
+
+.report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.report-item {
+    padding: 28px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.report-item:first-child {
+    border-top: 1px solid var(--border);
+}
+
+.report-item .report-date {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.report-link {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--fg);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 8px;
+    transition: color 0.2s;
+}
+
+.report-link:hover {
+    color: var(--accent);
+}
+
+.report-snippet {
+    font-size: 0.9rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* ── Report Cards (blog.html, lumma.html IOC) ────── */
+
+.report-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 40px;
+}
+
+.report-card {
+    background-color: var(--nav-bg);
+    border: 1px solid var(--border);
+    padding: 24px 28px;
+    border-radius: 8px;
+    text-align: left;
+    transition:
+        border-color 0.25s,
+        transform 0.25s;
+}
+
+.report-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+.report-date {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.report-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--fg);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 18px;
+    line-height: 1.35;
+    transition: color 0.2s;
+}
+
+.report-title:hover {
+    color: var(--accent);
+}
+
+/* ── Keywords / Tags ──────────────────────────────── */
+
+.keyword-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.keyword {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: rgba(255, 204, 102, 0.07);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 204, 102, 0.15);
+    letter-spacing: 0.5px;
+}
+
+/* ── Inline code / monospace snippets ────────────── */
+
+code,
+.mono {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.88rem;
+    color: var(--accent);
+    background: rgba(255, 204, 102, 0.06);
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* ── Code Blocks (Prism.js) — Ayu Dark ──────────── */
+
+pre[class*="language-"] {
+    position: relative;
+    background: #0d1017;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 36px 24px 20px;
+    overflow-x: auto;
+    margin: 28px 0;
+    font-size: 0.85rem;
+    line-height: 1.7;
+}
+
+pre[class*="language-"] code {
+    background: none;
+    color: #bfbdb6;
+    padding: 0;
+    font-size: inherit;
+    border-radius: 0;
+}
+
+/* Strip any backgrounds Prism's theme injects on tokens */
+.token {
+    background: none !important;
+    box-shadow: none !important;
+}
+
+/* Ayu Dark token colors */
+.token.comment,
+.token.prolog,
+.token.doctype {
+    color: #5c6773;
+    font-style: italic;
+}
+.token.keyword {
+    color: #ff8f40;
+}
+.token.string,
+.token.char {
+    color: #c2d94c;
+}
+.token.number {
+    color: #e6b450;
+}
+.token.function {
+    color: #ffb454;
+}
+.token.class-name,
+.token.builtin {
+    color: #39bae6;
+}
+.token.operator {
+    color: #e6b450;
+}
+.token.punctuation {
+    color: #bfbdb6;
+}
+.token.register,
+.token.label {
+    color: #59c2ff;
+}
+.token.directive,
+.token.important {
+    color: #ff8f40;
+}
+
+/* ── Copy button ──────────────────────────────────── */
+
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition:
+        color 0.2s,
+        border-color 0.2s;
+}
+
+.copy-btn:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.copy-btn.copied {
+    color: #c2d94c;
+    border-color: #c2d94c;
+}
+
+/* ── Back link ────────────────────────────────────── */
+
+.back-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: opacity 0.2s;
+}
+
+.back-link:hover {
+    opacity: 0.75;
+}
+
+/* ── Mobile ───────────────────────────────────────── */
+
+@media (max-width: 600px) {
+    nav {
+        padding: 14px 16px;
+    }
+
+    .nav-container {
+        gap: 20px;
+        /* Allow wrapping on very small screens */
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    nav a {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    main {
+        padding: 48px 18px 72px;
+    }
+
+    .typing-effect {
+        font-size: clamp(1.6rem, 8vw, 2rem);
+    }
+
+    .report-card {
+        padding: 18px 20px;
+    }
+
+    .report-title {
+        font-size: 1.05rem;
+        margin-bottom: 14px;
+    }
+
+    h1 {
+        font-size: 1.4rem;
+    }
+
+    p {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .nav-container {
+        gap: 14px;
+    }
+
+    nav a {
+        font-size: 0.7rem;
+    }
+}
