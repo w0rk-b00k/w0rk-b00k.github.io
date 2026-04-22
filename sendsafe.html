@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="style.css">
+    <title>Zero2Auto 0x01 — SendSafe: Blowfish ECB C2 Decryption | malcode.tech</title>
+</head>
+<body>
+    <nav>
+        <div class="nav-container">
+            <a href="index.html">Home</a>
+            <a href="blog.html">Analysis</a>
+            <a href="about.html">About</a>
+        </div>
+    </nav>
+
+    <main>
+        <div class="typing-container">
+            <div class="typing-effect">z2a.0x01</div>
+        </div>
+
+        <h1>Zero2Auto 0x01 — SendSafe: Blowfish ECB C2 Decryption</h1>
+        <p class="report-date" style="text-align: left; margin-bottom: 40px;">PUBLISHED: APR 17, 2026</p>
+
+        <h2>Executive Summary</h2>
+        <p>
+            <strong>sendsafe.bin</strong> is a spam bot that hides its C2 configuration inside the PE resource section,
+            encrypted with <strong>Blowfish ECB</strong> using a hardcoded 16-byte key. At runtime the binary locates
+            resource type <code>0xA</code> / ID <code>0xE2</code>, decodes the ASCII hex string stored there, decrypts
+            it block-by-block, and connects to the recovered address. The recovered C2 is
+            <strong>195.2.240.119:50055/50056</strong> advertising itself as <em>Enterprise Mailing Service</em>.
+            The key is fully static and present verbatim in the <code>.text</code> section, making detection and
+            bulk decryption straightforward.
+        </p>
+
+        <h2>Static Analysis — Resource Parsing</h2>
+        <p>
+            The binary calls <code>FindResourceA(NULL, 0xE2, 0xA)</code> to locate the encrypted blob.
+            Inside the PE resource tree the path is: <strong>Type 0xA → ID 0xE2 → Language entry 0</strong>.
+            The raw data at that node is a null-terminated ASCII hex string — each byte of ciphertext
+            is encoded as two uppercase hex characters, e.g. <code>BF</code> for <code>0xBF</code>.
+        </p>
+        <p>
+            The string is <strong>112 characters</strong> long (56 bytes of ciphertext), terminated by
+            <code>0x00</code>, followed by the literal bytes <code>PAD 0x14 0x03</code> which are section
+            padding and not part of the payload. Splitting on the null byte before any further processing
+            is required — <code>rstrip(b'\x00')</code> will silently include the padding because the
+            trailing bytes are non-null.
+        </p>
+        <pre><code class="language-python"># Correct — terminates at the first null, ignores trailing padding bytes
+hex_string = encrypted_c2.split(b'\x00')[0].decode('ascii')
+</code></pre>
+
+        <h2>Encryption Scheme — Blowfish ECB</h2>
+        <p>
+            The decryption routine at <code>sub_4220e0</code> implements <strong>Blowfish in ECB mode</strong>.
+            Each 8-byte ciphertext block is decrypted independently — there is no IV, no chaining, and no
+            dependency between blocks. This is the critical detail: CBC mode with a zero IV decrypts the
+            first block correctly (because XOR with zero is a no-op) but produces garbage for every
+            subsequent block, which is exactly what led to initial misidentification of the mode.
+        </p>
+        <p>
+            Blowfish itself runs <strong>16 Feistel rounds</strong> per block. Each round splits the
+            64-bit block into two 32-bit halves (L, R), passes L through the key-derived F-function,
+            XORs the result into R, then swaps the halves. After all 16 rounds a final XOR with the
+            last two P-array entries produces the output block.
+        </p>
+        <pre><code class="language-python"># Wrong — only block 1 decrypts correctly, blocks 2–7 are garbage
+cipher = Blowfish.new(KEY, Blowfish.MODE_CBC, iv=b'\x00' * 8)
+
+# Correct — every block decrypted independently
+cipher = Blowfish.new(KEY, Blowfish.MODE_ECB)
+</code></pre>
+
+        <h2>Key Recovery</h2>
+        <p>
+            The Blowfish key is hardcoded immediately before the call to <code>sub_4220e0</code> in the
+            payload setup function. It is 16 bytes wide and sits in the <code>.text</code> section as a
+            contiguous byte sequence — no obfuscation, no runtime construction:
+        </p>
+        <pre><code class="language-python">KEY = bytes([0x07, 0x54, 0x08, 0xD5, 0x67, 0x85, 0x9E, 0xE2,
+             0xAF, 0xE3, 0xC6, 0xA9, 0x8F, 0x3B, 0x0C, 0x5B])
+</code></pre>
+        <p>
+            The key sequence <code>07 54 08 D5 67 85 9E E2 AF E3 C6 A9 8F 3B 0C 5B</code> can be used
+            directly as a YARA string to pivot across samples and identify variants that reuse the same
+            key material.
+        </p>
+
+        <h2>Decryption Script</h2>
+        <p>
+            The script below recovers the C2 string from any sample that follows the same resource layout.
+            Change the path and key bytes to adapt to new variants.
+        </p>
+        <pre><code class="language-python">import pefile
+from Crypto.Cipher import Blowfish
+
+KEY = bytes([0x07, 0x54, 0x08, 0xD5, 0x67, 0x85, 0x9E, 0xE2,
+             0xAF, 0xE3, 0xC6, 0xA9, 0x8F, 0x3B, 0x0C, 0x5B])
+
+pe = pefile.PE("sendsafe.bin")
+
+encrypted_c2 = None
+for rsrc in pe.DIRECTORY_ENTRY_RESOURCE.entries:
+    if rsrc.id == 0xa:
+        for entry in rsrc.directory.entries:
+            if entry.id == 0xe2:
+                offset = entry.directory.entries[0].data.struct.OffsetToData
+                size   = entry.directory.entries[0].data.struct.Size
+                encrypted_c2 = pe.get_memory_mapped_image()[offset:offset+size]
+                break
+
+if encrypted_c2 is None:
+    print("Resource not found")
+else:
+    # Split at null — trailing PAD bytes are not part of the hex string
+    hex_string = encrypted_c2.split(b'\x00')[0].decode('ascii')
+
+    if len(hex_string) % 2 != 0:
+        hex_string += '0'
+
+    raw_encrypted = bytes.fromhex(hex_string)
+    block_data = raw_encrypted[:len(raw_encrypted) - (len(raw_encrypted) % 8)]
+
+    # ECB — each 8-byte block decrypted independently, no IV
+    cipher = Blowfish.new(KEY, Blowfish.MODE_ECB)
+    decrypted = cipher.decrypt(block_data)
+
+    c2 = decrypted.split(b'\x00')[0].decode('ascii', errors='ignore')
+    print(f"C2: {c2}")
+</code></pre>
+        <p>
+            Running against the sample recovers:
+            <code style="color: var(--accent);">195.2.240.119:50055/50056;Enterprise Mailing Service</code>
+        </p>
+
+        <h2>YARA Rule</h2>
+        <pre><code class="language-python">rule SendSafe_Blowfish_Hardcoded_Key
+{
+    meta:
+        description = "Detects SendSafe spam bot variant with hardcoded Blowfish key"
+        author      = "malcode.tech"
+        date        = "2026-04-17"
+        reference   = "195.2.240.119:50055/50056"
+
+    strings:
+        // 16-byte Blowfish key hardcoded in .text before sub_4220e0
+        $blowfish_key = { 07 54 08 D5 67 85 9E E2 AF E3 C6 A9 8F 3B 0C 5B }
+
+        // ASCII hex-encoded ciphertext prefix (first 8 bytes of encrypted C2)
+        $enc_c2_prefix = "BF8744B38F94407E"
+
+    condition:
+        uint16(0) == 0x5A4D and
+        (
+            $blowfish_key or
+            $enc_c2_prefix
+        )
+}
+</code></pre>
+
+        <h2>Indicators of Compromise (IOCs)</h2>
+        <div class="report-card">
+            <div class="keyword-row" style="margin-bottom: 20px;">
+                <span class="keyword">#Network</span>
+                <span class="keyword">#Config</span>
+                <span class="keyword">#CryptoKey</span>
+            </div>
+            <p style="font-family: monospace; font-size: 0.9rem; text-align: left; color: var(--accent);">
+                C2: 195.2.240[.]119:50055<br>
+                C2: 195.2.240[.]119:50056<br>
+                C2 Label: Enterprise Mailing Service<br>
+                Blowfish Key: 07 54 08 D5 67 85 9E E2 AF E3 C6 A9 8F 3B 0C 5B<br>
+                Resource Type: 0xA / ID: 0xE2<br>
+                Cipher: Blowfish-ECB, 16 rounds, no IV
+            </p>
+        </div>
+
+        <p style="margin-top: 50px;">
+            <a href="blog.html" style="color: var(--accent); text-decoration: none;">&larr; Back to Reports</a>
+        </p>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-c.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-nasm.min.js"></script>
+    <script>
+        document.querySelectorAll('pre[class*="language-"]').forEach(pre => {
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.textContent = 'copy';
+            pre.appendChild(btn);
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(pre.querySelector('code').innerText).then(() => {
+                    btn.textContent = 'copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.textContent = 'copy';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
