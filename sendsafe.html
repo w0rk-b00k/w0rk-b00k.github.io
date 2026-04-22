@@ -22,7 +22,7 @@
         </div>
 
         <h1>Zero2Auto 0x01 — SendSafe: Blowfish ECB C2 Decryption</h1>
-        <p class="report-date" style="text-align: left; margin-bottom: 40px;">PUBLISHED: APR 17, 2026</p>
+        <p class="report-date" style="text-align: left; margin-bottom: 40px;">PUBLISHED: APR 21, 2026</p>
 
         <h2>Executive Summary</h2>
         <p>
@@ -30,9 +30,8 @@
             encrypted with <strong>Blowfish ECB</strong> using a hardcoded 16-byte key. At runtime the binary locates
             resource type <code>0xA</code> / ID <code>0xE2</code>, decodes the ASCII hex string stored there, decrypts
             it block-by-block, and connects to the recovered address. The recovered C2 is
-            <strong>195.2.240.119:50055/50056</strong> advertising itself as <em>Enterprise Mailing Service</em>.
-            The key is fully static and present verbatim in the <code>.text</code> section, making detection and
-            bulk decryption straightforward.
+            <strong>195.2.240.119:50055/50056</strong> advertising itself as <em>Enterprise Mailing Service</em>. The main functionality for the
+            encryption and set up can be found at va (virutal address) 0x0004762da0.
         </p>
 
         <h2>Static Analysis — Resource Parsing</h2>
@@ -51,6 +50,36 @@
         </p>
         <pre><code class="language-python"># Correct — terminates at the first null, ignores trailing padding bytes
 hex_string = encrypted_c2.split(b'\x00')[0].decode('ascii')
+</code></pre>
+        <p>
+            The decompiled resource loading sequence confirms the flow — the resource is located,
+            loaded into memory, and copied into a local buffer before being passed to the decryption
+            routine. The key bytes are then set up inline immediately after:
+        </p>
+        <pre><code class="language-c">local_5ff4 = FindResourceA((HMODULE)0x0,(LPCSTR)0xe2,(LPCSTR)0xa);
+local_5fe4 = LoadResource((HMODULE)0x0,local_5ff4);
+local_5ff0 = LockResource(local_5fe4);
+_strcpy(local_54c,local_5ff0);
+local_5fd8 = sub_44e5b0(local_14c,(char *)local_54c,0x100);
+if (0 < (int)local_5fd8) {
+  local_24 = 7;
+  local_23 = 0x54;
+  local_22 = 8;
+  local_21 = 0xd5;
+  local_20 = 0x67;
+  local_1f = 0x85;
+  local_1e = 0x9e;
+  local_1d = 0xe2;
+  local_1c = 0xaf;
+  local_1b = 0xe3;
+  local_1a = 0xc6;
+  local_19 = 0xa9;
+  local_18 = 0x8f;
+  local_17 = 0x3b;
+  local_16 = 0xc;
+  local_15 = 0x5b;
+  local_5ffc = 0;
+  local_5ff8 = 0;
 </code></pre>
 
         <h2>Encryption Scheme — Blowfish ECB</h2>
