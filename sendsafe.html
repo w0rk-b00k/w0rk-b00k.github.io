@@ -31,7 +31,7 @@
             resource type <code>0xA</code> / ID <code>0xE2</code>, decodes the ASCII hex string stored there, decrypts
             it block-by-block, and connects to the recovered address. The recovered C2 is
             <strong>195.2.240.119:50055/50056</strong> advertising itself as <em>Enterprise Mailing Service</em>. The main functionality for the
-            encryption and set up can be found at va (virutal address) 0x0004762da0.
+            encryption and set up can be found at va (virutal address) <strong>0x0004762da0</strong>.
         </p>
 
         <h2>Static Analysis — Resource Parsing</h2>
@@ -39,16 +39,17 @@
             The binary calls <code>FindResourceA(NULL, 0xE2, 0xA)</code> to locate the encrypted blob.
             Inside the PE resource tree the path is: <strong>Type 0xA → ID 0xE2 → Language entry 0</strong>.
             The raw data at that node is a null-terminated ASCII hex string — each byte of ciphertext
-            is encoded as two uppercase hex characters, e.g. <code>BF</code> for <code>0xBF</code>.
+            is encoded as two hex characters, e.g. <code>BF</code> for <code>0xBF</code>.
         </p>
         <p>
             The string is <strong>112 characters</strong> long (56 bytes of ciphertext), terminated by
             <code>0x00</code>, followed by the literal bytes <code>PAD 0x14 0x03</code> which are section
             padding and not part of the payload. Splitting on the null byte before any further processing
             is required — <code>rstrip(b'\x00')</code> will silently include the padding because the
-            trailing bytes are non-null.
+            trailing bytes are non-null. Measuring the null-terminated hex string directly <code> `len(encrypted_c2.split(b'\x00')[0])`</code>
+            returns 112 bytes which <code>sub_44e5b0</code> halves. This fills up 7 blowfish blocks.
         </p>
-        <pre><code class="language-python"># Correct — terminates at the first null, ignores trailing padding bytes
+        <pre><code class="language-python"># Terminates at the first null, ignores trailing padding bytes
 hex_string = encrypted_c2.split(b'\x00')[0].decode('ascii')
 </code></pre>
         <p>
@@ -96,10 +97,7 @@ if (0 < (int)local_5fd8) {
             XORs the result into R, then swaps the halves. After all 16 rounds a final XOR with the
             last two P-array entries produces the output block.
         </p>
-        <pre><code class="language-python"># Wrong — only block 1 decrypts correctly, blocks 2–7 are garbage
-cipher = Blowfish.new(KEY, Blowfish.MODE_CBC, iv=b'\x00' * 8)
-
-# Correct — every block decrypted independently
+        <pre><code class="language-python"> # Every block decrypted independently
 cipher = Blowfish.new(KEY, Blowfish.MODE_ECB)
 </code></pre>
 
