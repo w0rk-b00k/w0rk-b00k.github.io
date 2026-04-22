@@ -92,10 +92,20 @@ if (0 < (int)local_5fd8) {
             subsequent block, which is exactly what led to initial misidentification of the mode.
         </p>
         <p>
-            Blowfish itself runs <strong>16 Feistel rounds</strong> per block. Each round splits the
-            64-bit block into two 32-bit halves (L, R), passes L through the key-derived F-function,
-            XORs the result into R, then swaps the halves. After all 16 rounds a final XOR with the
-            last two P-array entries produces the output block.
+            The resource stores ciphertext as ASCII hex — each real byte is encoded as two characters,
+            e.g. <code>BF</code> = one byte <code>0xBF</code>. Converting to actual bytes:
+            <code>112 hex chars / 2 = 56 bytes</code>. Blowfish operates on 8-byte blocks, so:
+            <code>56 bytes / 8 = 7 blocks</code>. Blowfish runs its 16-round process
+            once per block — <strong>7 times total</strong> — and concatenates the results.
+        </p>
+        <p>
+            Each 8-byte block is split into two 32-bit halves: <strong>L</strong> (high) and
+            <strong>R</strong> (low). Per round, a P-array entry is XOR'd into L (injecting key
+            material), L is passed through the F-function (which uses key-derived S-boxes), the
+            result is XOR'd into R, then L and R swap. After 16 rounds, a final XOR with the last
+            two P-array entries (<code>P17</code>, <code>P18</code>) produces the output block.
+            L holds half the data — the key lives in the P-array and S-boxes set up before
+            encryption starts.
         </p>
         <pre><code class="language-python"> # Every block decrypted independently
 cipher = Blowfish.new(KEY, Blowfish.MODE_ECB)
